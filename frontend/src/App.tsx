@@ -1,54 +1,97 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import "./App.css";
 
 const DEFAULT_API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-function useApiCall() {
-  const [results, setResults] = useState({});
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-  const call = useCallback(async (key, method, path, body) => {
-    setResults((prev) => ({
-      ...prev,
-      [key]: { status: "loading", data: null, error: null, durationMs: null },
-    }));
+type CallStatus = "loading" | "ok" | "error";
 
-    const baseUrl = document.getElementById("apiBase")?.value || DEFAULT_API_BASE;
-    const url = `${baseUrl.replace(/\/$/, "")}${path}`;
-    const start = performance.now();
+interface ApiResult {
+  status: CallStatus;
+  data: unknown;
+  error: string | null;
+  durationMs: number | null;
+  httpStatus?: number;
+}
 
-    try {
-      const options = {
-        method,
-        headers: { "Content-Type": "application/json" },
-      };
-      if (body !== undefined) options.body = JSON.stringify(body);
+type ResultsMap = Record<string, ApiResult>;
 
-      const res = await fetch(url, options);
-      const durationMs = Math.round(performance.now() - start);
-      let data;
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
+function useApiCall(): {
+  results: ResultsMap;
+  call: (key: string, method: string, path: string, body?: unknown) => Promise<void>;
+} {
+  const [results, setResults] = useState<ResultsMap>({});
+
+  const call = useCallback(
+    async (key: string, method: string, path: string, body?: unknown) => {
+      setResults((prev) => ({
+        ...prev,
+        [key]: { status: "loading", data: null, error: null, durationMs: null },
+      }));
+
+      const baseEl = document.getElementById("apiBase") as HTMLInputElement | null;
+      const baseUrl = baseEl?.value || DEFAULT_API_BASE;
+      const url = `${baseUrl.replace(/\/$/, "")}${path}`;
+      const start = performance.now();
+
       try {
-        data = await res.json();
-      } catch {
-        data = await res.text();
+        const options: RequestInit = {
+          method,
+          headers: { "Content-Type": "application/json" },
+        };
+        if (body !== undefined) options.body = JSON.stringify(body);
+
+        const res = await fetch(url, options);
+        const durationMs = Math.round(performance.now() - start);
+
+        let data: unknown;
+        try {
+          data = await res.json();
+        } catch {
+          data = await res.text();
+        }
+
+        setResults((prev) => ({
+          ...prev,
+          [key]: {
+            status: res.ok ? "ok" : "error",
+            data,
+            durationMs,
+            httpStatus: res.status,
+            error: null,
+          },
+        }));
+      } catch (err) {
+        const durationMs = Math.round(performance.now() - start);
+        setResults((prev) => ({
+          ...prev,
+          [key]: {
+            status: "error",
+            error: err instanceof Error ? err.message : String(err),
+            data: null,
+            durationMs,
+          },
+        }));
       }
-      setResults((prev) => ({
-        ...prev,
-        [key]: { status: res.ok ? "ok" : "error", data, durationMs, httpStatus: res.status },
-      }));
-    } catch (err) {
-      const durationMs = Math.round(performance.now() - start);
-      setResults((prev) => ({
-        ...prev,
-        [key]: { status: "error", error: err.message, data: null, durationMs },
-      }));
-    }
-  }, []);
+    },
+    []
+  );
 
   return { results, call };
 }
 
-function ResultBox({ label, result }) {
+// ── ResultBox ─────────────────────────────────────────────────────────────────
+
+interface ResultBoxProps {
+  label: string;
+  result: ApiResult | undefined;
+}
+
+function ResultBox({ label, result }: ResultBoxProps) {
   if (!result) return null;
   const isLoading = result.status === "loading";
   const isOk = result.status === "ok";
@@ -60,7 +103,7 @@ function ResultBox({ label, result }) {
         {result.durationMs !== null && (
           <span className="result-timing">{result.durationMs} ms</span>
         )}
-        {result.httpStatus && (
+        {result.httpStatus !== undefined && (
           <span className={`result-status ${isOk ? "status-ok" : "status-err"}`}>
             HTTP {result.httpStatus}
           </span>
@@ -77,7 +120,25 @@ function ResultBox({ label, result }) {
   );
 }
 
-function EndpointCard({ title, description, onRun, resultKey, results, children }) {
+// ── EndpointCard ──────────────────────────────────────────────────────────────
+
+interface EndpointCardProps {
+  title: string;
+  description: string;
+  onRun: () => void;
+  resultKey: string;
+  results: ResultsMap;
+  children?: ReactNode;
+}
+
+function EndpointCard({
+  title,
+  description,
+  onRun,
+  resultKey,
+  results,
+  children,
+}: EndpointCardProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -90,6 +151,8 @@ function EndpointCard({ title, description, onRun, resultKey, results, children 
     </div>
   );
 }
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const { results, call } = useApiCall();
@@ -150,13 +213,13 @@ export default function App() {
           resultKey="echo"
           results={results}
           onRun={() => {
-            let body;
+            let body: unknown;
             try {
-              body = JSON.parse(echoInput);
+              body = JSON.parse(echoInput) as unknown;
             } catch {
               body = { raw: echoInput };
             }
-            call("echo", "POST", "/echo", body);
+            void call("echo", "POST", "/echo", body);
           }}
         >
           <textarea
@@ -173,7 +236,9 @@ export default function App() {
           description="Backend resolves a hostname via DNS — tests outbound DNS from the VPS."
           resultKey="dns"
           results={results}
-          onRun={() => call("dns", "GET", `/dns?hostname=${encodeURIComponent(dnsHost)}`)}
+          onRun={() =>
+            void call("dns", "GET", `/dns?hostname=${encodeURIComponent(dnsHost)}`)
+          }
         >
           <input
             type="text"
@@ -188,7 +253,9 @@ export default function App() {
           description="Backend fetches a URL — tests outbound HTTP from the VPS."
           resultKey="fetch"
           results={results}
-          onRun={() => call("fetch", "GET", `/fetch?url=${encodeURIComponent(fetchUrl)}`)}
+          onRun={() =>
+            void call("fetch", "GET", `/fetch?url=${encodeURIComponent(fetchUrl)}`)
+          }
         >
           <input
             type="text"
@@ -201,7 +268,8 @@ export default function App() {
 
       <footer>
         <p>
-          Backend on Hetzner VPS · Frontend on Cloudflare Pages · Connected via Cloudflare Tunnel
+          Backend on Hetzner VPS · Frontend on Cloudflare Pages · Connected via
+          Cloudflare Tunnel
         </p>
       </footer>
     </div>
