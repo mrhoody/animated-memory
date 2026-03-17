@@ -1,0 +1,20 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: connectivity-test-api
+    container_name: connectivity-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      # Comma-separated allowed CORS origins.
+      # Replace with your actual Cloudflare Pages URL once known.
+      ALLOWED_ORIGINS: "*"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
