@@ -146,7 +146,9 @@ function EndpointCard({
         <p>{description}</p>
       </div>
       {children}
-      <button onClick={onRun}>Run</button>
+      <button onClick={onRun} aria-label={`Run ${title}`}>
+        Run
+      </button>
       <ResultBox label={title} result={results[resultKey]} />
     </div>
   );
