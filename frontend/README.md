@@ -1,16 +1,31 @@
-# React + Vite
+# Diagnostics Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the frontend for the diagnostics application, built with React and Vite.
 
-Currently, two official plugins are available:
+The root-level `README.md` describes the overall diagnostics app, backend, and architecture. This file focuses on how to work with the frontend in this `frontend/` folder.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Getting started
 
-## React Compiler
+From this `frontend/` directory:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Start the development server
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Create a production build
+npm run build
+
+# Preview the production build locally (after building)
+npm run preview
+```
+
+Adjust the commands above if your package manager or scripts differ.
+
+## Project structure
+
+The main application source code lives under `src/`. Configuration files for Vite and tooling (for example, ESLint) are in the project root of this `frontend/` directory.
+
+For details about the diagnostics features, API endpoints, and deployment, see the repository’s root `README.md`.
