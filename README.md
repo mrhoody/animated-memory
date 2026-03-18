@@ -20,15 +20,15 @@ Node.js API :3000
 .
 ├── backend/          Node 24 + Express API
 │   ├── src/
-│   │   └── server.js
+│   │   └── server.ts
 │   ├── Dockerfile
 │   ├── package.json
 │   └── .env.example
 ├── frontend/         Vite + React diagnostics UI
 │   ├── src/
-│   │   ├── App.jsx
+│   │   ├── App.tsx
 │   │   ├── App.css
-│   │   └── main.jsx
+│   │   └── main.tsx
 │   ├── index.html
 │   ├── package.json
 │   └── .env.example
