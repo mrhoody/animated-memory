@@ -32,6 +32,8 @@ cloudflared tunnel login
 # Opens a browser — authorise the domain you want to use.
 # A credentials file is saved to ~/.cloudflared/
 ```
+If you wish to copy your credentials to a server, they have been saved to:
+/root/.cloudflared/cert.pem
 
 ---
 
